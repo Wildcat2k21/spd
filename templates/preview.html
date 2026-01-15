@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hope</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="${PROTOCOL}://${SERVER_ADDR}:${SERVER_PORT}/styles/main.css">
+    <link rel="stylesheet" href="${PROTOCOL}://${SERVER_ADDR}:${SERVER_PORT}/styles/preview.css">
+</head>
+<body class="body">
+    <div class="app">
+        
+        <div class="preview">
+            <div class="preview__image">
+                <canvas width="720" height="1080" class="canvas preview__image" id="img-show"></canvas>
+            </div>
+            <div class="preview__logger-wrapper">
+                <textarea class="record__logs" id="txt-logs"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        window.__CONFIG__ = {
+
+            // server
+            SERVER_ADDR: "${SERVER_ADDR}",
+            SERVER_HOST: "${SERVER_ADDR}:${SERVER_PORT}",
+            API_PREFIX: "${API_PREFIX}",
+            PROTOCOL: "${PROTOCOL}",
+
+            // screenshot
+            SCR_INTERVAL: "${SCR_INTERVAL}",
+            SCR_QUALITY:"${SCR_QUALITY}"
+        }
+    </script>
+    <script src="${PROTOCOL}://${SERVER_ADDR}:${SERVER_PORT}/src/preview.js" type="module"></script>
+</body>
+</html>

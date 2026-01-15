@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hope</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://192.168.1.116:3000/styles/main.css">
+    <link rel="stylesheet" href="https://192.168.1.116:3000/styles/preview.css">
+</head>
+<body class="body">
+    <div class="app">
+        
+        <div class="preview">
+            <div class="preview__image">
+                <canvas width="720" height="1080" class="canvas preview__image" id="img-show"></canvas>
+            </div>
+            <div class="preview__logger-wrapper">
+                <textarea class="record__logs" id="txt-logs"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        window.__CONFIG__ = {
+
+            // server
+            SERVER_ADDR: "192.168.1.116",
+            SERVER_HOST: "192.168.1.116:3000",
+            API_PREFIX: "",
+            PROTOCOL: "https",
+
+            // screenshot
+            SCR_INTERVAL: "1000",
+            SCR_QUALITY:"0.5"
+        }
+    </script>
+    <script src="https://192.168.1.116:3000/src/preview.js" type="module"></script>
+</body>
+</html>

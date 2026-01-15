@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hope</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://192.168.1.116:3000/styles/main.css">
+    <link rel="stylesheet" href="https://192.168.1.116:3000/styles/record.css">
+</head>
+<body class="body">
+    <div class="app">
+        
+        <div class="record">
+            <div class="record__demo">
+                <canvas width="720" height="1080" class="canvas record__show" id="rec-show"></canvas>
+            </div>
+            <div class="record__control">
+                <select class="record__dev-sel" name="rec-dev" id="rec-dev-select">
+                    <option value="">Выберите устройство записи</option>
+                </select>
+                <input class="record__link" id="share-link" type="text" readonly>
+                <button class="record__create" >поделиться</button>
+                <textarea class="record__logs" id="txt-logs"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        window.__CONFIG__ = {
+
+            // server
+            SERVER_ADDR: "192.168.1.116",
+            SERVER_HOST: "192.168.1.116:3000",
+            API_PREFIX: "",
+            PROTOCOL: "https",
+
+            // screenshot
+            SCR_INTERVAL: "1000",
+            SCR_QUALITY:"0.5"
+        }
+    </script>
+    <script src="https://192.168.1.116:3000/src/record.js" type="module"></script>
+</body>
+</html>
