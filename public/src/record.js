@@ -53,41 +53,6 @@ function selectAllIfNotEmpty() {
 $roomLink.addEventListener('click', selectAllIfNotEmpty);
 $roomLink.addEventListener('touchend', selectAllIfNotEmpty);
 
-//Интервал создания скриншотов
-const timerID = setInterval(async () => {
-
-    const blob = await camera.makeScreenshot({
-        quality: Number(__CONFIG__.SCR_QUALITY)
-    });
-
-    const roomId = localStorage.getItem('roomId');
-    
-    if (!roomId) {
-        logger.addLine(`Комната не создана`);
-        throw new Error(`Комната не создана`)
-    }
-
-    // Формируем FormData с roomId
-    const form = new FormData();
-    form.append('file', blob, 'screenshot.jpg');
-    form.append('roomId', roomId);
-
-    try{
-        const res = await fetch(`${api}/screenshot`, {
-            method: 'POST',
-            body: form
-        });
-
-        const json = await res.json();
-        logger.addLine(`Скриншот сохранен в комнате: "${roomId}", id: ${json.id}, размер: ${(blob.size / 1024).toFixed(1)} KB`);
-    }
-    catch(err){
-        logger.addLine(`Не удалось сохранить скриншот: ${err.message}`);
-        throw err;
-    }
-
-}, __CONFIG__.SCR_INTERVAL ?? 1000);
-
 // кнопка "создания комнаты"
 btn.addEventListener('click', async () => {
 
@@ -102,5 +67,54 @@ btn.addEventListener('click', async () => {
 
     logger.addLine(`Комната создана, ID: ${roomId}`);
 });
+
+let isRunning = false;
+let stopped = false;
+
+async function screenshotLoop() {
+    if (stopped) return;
+    if (isRunning) return;
+
+    isRunning = true;
+
+    try {
+        const blob = await camera.makeScreenshot({
+            quality: Number(__CONFIG__.SCR_QUALITY)
+        });
+
+        const roomId = localStorage.getItem('roomId');
+        if (!roomId) {
+            logger.addLine('Комната не создана');
+            return;
+        }
+
+        const form = new FormData();
+        form.append('file', blob, 'screenshot.jpg');
+        form.append('roomId', roomId);
+
+        const res = await fetch(`${api}/screenshot`, {
+            method: 'POST',
+            body: form
+        });
+
+        const json = await res.json();
+        logger.addLine(
+            `Скрин сохранён: ${json.id}, ${(blob.size / 1024).toFixed(1)} KB`
+        );
+    } catch (err) {
+        logger.addLine(`Ошибка скрина: ${err.message}`);
+    } finally {
+        isRunning = false;
+        setTimeout(screenshotLoop, __CONFIG__.SCR_INTERVAL ?? 1000);
+    }
+}
+
+// стоп (если понадобится)
+function stopScreenshots() {
+    stopped = true;
+}
+
+// старт
+screenshotLoop();
 
 

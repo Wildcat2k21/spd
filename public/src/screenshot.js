@@ -32,28 +32,44 @@ export default class CameraScreenshotController {
         await this.video.play();
     }
 
-    makeScreenshot({ quality = 0.8, mode = 'cover' } = {}) {
-        if (!this.video.videoWidth) {
-            this.logger.addLine('Видео ещё не готово');
-            throw new Error('Видео ещё не готово');
-        }
+    async makeScreenshot({
+    quality = 0.8,
+    mode = 'cover',
+    deviceId
+    } = {}) {
+        try {
+            // 1. Открываем камеру
+            this.stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    deviceId: deviceId ? { exact: deviceId } : undefined,
+                    width: this.canvas.width,
+                    height: this.canvas.height
+                }
+            });
 
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.video.srcObject = this.stream;
+            await this.video.play();
 
-        drawImageCover(
-            this.ctx,
-            this.video,
-            this.canvas,
-            mode
-        );
+            // 2. Ждём реальный кадр (ВАЖНО для Android)
+            await new Promise(resolve => {
+                if (this.video.videoWidth) return resolve();
+                this.video.onloadedmetadata = () => resolve();
+            });
 
-        return new Promise(resolve => {
-            this.canvas.toBlob(
-                blob => resolve(blob),
-                'image/jpeg',
-                quality
+            // 3. Рисуем кадр
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            drawImageCover(this.ctx, this.video, this.canvas, mode);
+
+            // 4. Конвертируем в Blob
+            const blob = await new Promise(resolve =>
+                this.canvas.toBlob(resolve, 'image/jpeg', quality)
             );
-        });
+
+            return blob;
+        } finally {
+            // 5. ВСЕГДА выключаем камеру
+            this.stop();
+        }
     }
 
     stop() {
