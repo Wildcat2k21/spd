@@ -3,7 +3,7 @@ import Logger from './logger.js';
 
 const canvas = document.getElementById('rec-show');
 const select = document.getElementById('rec-dev-select');
-const btn = document.querySelector('.record__create');
+const btn = document.getElementById('rec-share');
 
 const logger = new Logger("#txt-logs");
 const camera = new CameraScreenshotController(canvas, logger);
@@ -53,33 +53,19 @@ function selectAllIfNotEmpty() {
 $roomLink.addEventListener('click', selectAllIfNotEmpty);
 $roomLink.addEventListener('touchend', selectAllIfNotEmpty);
 
-// кнопка "создания комнаты"
-btn.addEventListener('click', async () => {
-
-    const res = await fetch(`${api}/create-room`, { method: 'POST' });
-    const { roomId } = await res.json();
-
-    // Сохраняем ID комнаты
-    localStorage.setItem('roomId', roomId);
-
-    $roomLink.value =
-        `${location.protocol}//${location.host}/preview.html?roomId=${roomId}`;
-
-    logger.addLine(`Комната создана, ID: ${roomId}`);
-});
-
-let isRunning = false;
-let stopped = false;
+let screenshotsIsRunning = false;
+let screenshotsIsStopped = false;
 
 async function screenshotLoop() {
-    if (stopped) return;
-    if (isRunning) return;
+    if (screenshotsIsStopped) return;
+    if (screenshotsIsRunning) return;
 
-    isRunning = true;
+    screenshotsIsRunning = true;
+    console.log(screenshotsIsStopped, screenshotsIsRunning);
 
     try {
         const blob = await camera.makeScreenshot({
-            quality: Number(__CONFIG__.SCR_QUALITY)
+            quality: Number(__CONFIG__.SCR_QUALITY),
         });
 
         const roomId = localStorage.getItem('roomId');
@@ -104,17 +90,41 @@ async function screenshotLoop() {
     } catch (err) {
         logger.addLine(`Ошибка скрина: ${err.message}`);
     } finally {
-        isRunning = false;
+        screenshotsIsRunning = false;
         setTimeout(screenshotLoop, __CONFIG__.SCR_INTERVAL ?? 1000);
     }
 }
 
-// стоп (если понадобится)
-function stopScreenshots() {
-    stopped = true;
-}
-
-// старт
 screenshotLoop();
 
+// кнопка "создания комнаты"
+btn.addEventListener('click', async ({ target }) => {
 
+    screenshotsIsStopped = !screenshotsIsStopped;
+
+    if(!screenshotsIsStopped) {
+        target.textContent = "Остановить";
+
+        // Не спамить комнатами
+        if(!localStorage.getItem('roomId')){
+            await createRoom();
+        }
+    }
+    // Остановка скриншотов
+    else{
+        target.textContent = "Продолжить";
+    }
+});
+
+async function createRoom(){
+    const res = await fetch(`${api}/create-room`, { method: 'POST' });
+    const { roomId } = await res.json();
+
+    // Сохраняем ID комнаты
+    localStorage.setItem('roomId', roomId);
+
+    $roomLink.value =
+        `${location.protocol}//${location.host}/preview.html?roomId=${roomId}`;
+
+    logger.addLine(`Комната создана, ID: ${roomId}`);
+}
