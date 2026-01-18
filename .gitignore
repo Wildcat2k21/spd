@@ -1,2 +1,5 @@
 /screenshots
 /node_modules
+
+/public/index.html
+/public/preview.html
