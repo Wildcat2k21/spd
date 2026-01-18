@@ -6,10 +6,13 @@ export default class Logger {
 
     addLine(message){
         this.logArr.push(message);
-        this.$logElem.value = this.logArr.join("\n");
-
-        if(this.logArr.length > 10) {
-            this.logArr.splice(0, 1);
+        this.$logElem.value = this.logArr.map((line, index) => {
+            const lineN = (index + 1).toString().padStart(2, "0");
+            return `${lineN}: ${line}`
+        }).join('\n');
+        
+        if(this.logArr.length > 9) {
+            this.logArr = [];
         }
     }
 }

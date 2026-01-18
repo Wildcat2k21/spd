@@ -5,16 +5,12 @@
 }
 
 .canvas {
-    max-height: 75vh;
+    max-height: 100vh;
     background-color: rgba(0, 0, 0, 0.156);
 }
 
-.preview__logger-wrapper {
-    width: 100vw;
-    height: 20vh;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-    align-items: center;
+.record__logs {
+    position: fixed;
+    right: 0;
+    top: 0;
 }

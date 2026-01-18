@@ -67,7 +67,7 @@ async function pullImage(filename = 'main.jpg') {
 // --- Авто pull / раз в секунду ---
 setInterval(() => {
     pullImage('main.jpg');
-}, __CONFIG__.SCR_INTERVAL ?? 1000);
+}, __CONFIG__.INTERVAL ?? 1000);
 
 // Первый вызов сразу
 pullImage('main.jpg');

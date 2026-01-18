@@ -20,6 +20,50 @@ const api = `
 
 logger.addLine(`Используется: ${api}`);
 
+if ('wakeLock' in navigator) {
+    logger.addLine('Wake Lock API поддерживается');
+} else {
+    logger.addLine('Wake Lock API НЕ поддерживается');
+}
+
+let wakeLock = null;
+
+async function enableWakeLock() {
+    if (!('wakeLock' in navigator)) {
+        logger.addLine('Wake Lock API недоступен в этом браузере');
+        return;
+    }
+
+    try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        logger.addLine('Wake Lock успешно получен');
+
+        wakeLock.addEventListener('release', () => {
+            logger.addLine('Wake Lock был освобождён браузером');
+        });
+    } catch (e) {
+        logger.addLine(`Wake Lock ошибка: ${e.name}`);
+    }
+}
+
+function disableWakeLock() {
+    wakeLock?.release();
+    wakeLock = null;
+    logger.addLine('Wake Lock выключен');
+}
+
+document.addEventListener('visibilitychange', () => {
+    logger.addLine(`Visibility: ${document.visibilityState}`);
+    
+    if (
+        document.visibilityState === 'visible' &&
+        !screenshotsIsStopped &&
+        !wakeLock
+    ) {
+        enableWakeLock();
+    }
+});
+
 // загрузка устройств
 camera.initDevices().then(devices => {
     devices.forEach(d => {
@@ -33,7 +77,9 @@ camera.initDevices().then(devices => {
 // выбор камеры
 select.addEventListener('change', e => {
     if (e.target.value) {
-        camera.start(e.target.value);
+        camera.selectedDevice = e.target.value;
+        btn.removeAttribute('disabled');
+        logger.addLine(`Выбрано устройство: ${e.target.value}`);
     }
 });
 
@@ -47,28 +93,28 @@ function selectAllIfNotEmpty() {
     setTimeout(() => {
         $roomLink.focus();
         $roomLink.select();
-    }, 0);
+    }, 100);
 }
 
 $roomLink.addEventListener('click', selectAllIfNotEmpty);
 $roomLink.addEventListener('touchend', selectAllIfNotEmpty);
 
 let screenshotsIsRunning = false;
-let screenshotsIsStopped = false;
+let screenshotsIsStopped = true;
 
 async function screenshotLoop() {
     if (screenshotsIsStopped) return;
     if (screenshotsIsRunning) return;
 
     screenshotsIsRunning = true;
-    console.log(screenshotsIsStopped, screenshotsIsRunning);
 
     try {
+        const roomId = localStorage.getItem('roomId');
+        
         const blob = await camera.makeScreenshot({
-            quality: Number(__CONFIG__.SCR_QUALITY),
+            quality: Number(__CONFIG__.QUALITY),
         });
 
-        const roomId = localStorage.getItem('roomId');
         if (!roomId) {
             logger.addLine('Комната не создана');
             return;
@@ -91,28 +137,35 @@ async function screenshotLoop() {
         logger.addLine(`Ошибка скрина: ${err.message}`);
     } finally {
         screenshotsIsRunning = false;
-        setTimeout(screenshotLoop, __CONFIG__.SCR_INTERVAL ?? 1000);
+        setTimeout(screenshotLoop, __CONFIG__.INTERVAL ?? 1000);
     }
 }
-
-screenshotLoop();
 
 // кнопка "создания комнаты"
 btn.addEventListener('click', async ({ target }) => {
 
+    if(!camera.selectedDevice) {
+        return;
+    }
+
     screenshotsIsStopped = !screenshotsIsStopped;
 
-    if(!screenshotsIsStopped) {
+    // Скриншоты остановлены
+    if(screenshotsIsStopped) {
+        target.textContent = "Продолжить";
+        disableWakeLock();              // ⬅️ ВАЖНО
+    }
+    // Продолжение скриншотов
+    else{
         target.textContent = "Остановить";
 
         // Не спамить комнатами
         if(!localStorage.getItem('roomId')){
             await createRoom();
         }
-    }
-    // Остановка скриншотов
-    else{
-        target.textContent = "Продолжить";
+
+        await enableWakeLock();         // ⬅️ ВАЖНО
+        screenshotLoop();
     }
 });
 

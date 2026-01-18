@@ -11,7 +11,7 @@
         
         <div class="preview">
             <div class="preview__image">
-                <canvas width="720" height="1080" class="canvas preview__image" id="img-show"></canvas>
+                <canvas width="${QUALITY_WIDTH}" height="${QUALITY_HEIGHT}" class="canvas preview__image" id="img-show"></canvas>
             </div>
             <div class="preview__logger-wrapper">
                 <textarea spellcheck="false" class="record__logs" id="txt-logs"></textarea>
@@ -29,8 +29,10 @@
             PROTOCOL: "${PROTOCOL}",
 
             // screenshot
-            SCR_INTERVAL: "${SCR_INTERVAL}",
-            SCR_QUALITY:"${SCR_QUALITY}"
+            INTERVAL: "${INTERVAL}",
+            QUALITY:"${QUALITY}",
+            QUALITY_WIDTH: "${QUALITY_WIDTH}",
+            QUALITY_HEIGHT: "${QUALITY_HEIGHT}",
         }
     </script>
     <script src="${PROTOCOL}://${SERVER_ADDR}:${SERVER_PORT}/src/preview.js" type="module"></script>

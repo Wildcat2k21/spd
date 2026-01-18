@@ -6,6 +6,7 @@ export default class CameraScreenshotController {
         this.video.playsInline = true;
         this.video.muted = true;
         this.stream = null;
+        this.selectedDevice = null;
 
         this.logger = logger;
     }
@@ -17,31 +18,15 @@ export default class CameraScreenshotController {
         return devices.filter(d => d.kind === 'videoinput');
     }
 
-    async start(deviceId) {
-        this.stop();
-
-        this.stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                deviceId: { exact: deviceId },
-                width: this.canvas.width,
-                height: this.canvas.height
-            }
-        });
-
-        this.video.srcObject = this.stream;
-        await this.video.play();
-    }
-
     async makeScreenshot({
-    quality = 0.8,
-    mode = 'cover',
-    deviceId
+        quality = 0.8,
+        mode = 'cover'
     } = {}) {
         try {
             // 1. Открываем камеру
             this.stream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    deviceId: deviceId ? { exact: deviceId } : undefined,
+                    deviceId: this.selectedDevice ? { exact: this.selectedDevice } : undefined,
                     width: this.canvas.width,
                     height: this.canvas.height
                 }
