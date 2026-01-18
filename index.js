@@ -53,42 +53,76 @@ app.post('/create-room', (req, res) => {
 });
 
 // POST /screenshot
-// body: FormData { file: Blob, roomId: string }
+// body: FormData { file: Blob }
 app.post('/screenshot', upload.single('file'), (req, res) => {
     const roomId = req.body.roomId;
 
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+    }
+
     if (!roomId || !rooms.roomExists(roomId)) {
-        // Удаляем временный файл, если комната не найдена
         fs.unlinkSync(req.file.path);
         return res.status(400).json({ error: 'Room not found' });
     }
 
-    // Получаем папку комнаты
     const roomPath = rooms.getRoomPath(roomId);
-    const oldPath = req.file.path;
+    const tempPath = req.file.path;
 
-    const imgName = DEF_FILE_NAME; //req.fileId
+    // 🟢 1. Сохраняем новый файл СРАЗУ
+    const imgName = nanoid();
     const newPath = path.join(roomPath, `${imgName}.jpg`);
 
-    // Перемещаем файл в папку комнаты
-    fs.renameSync(oldPath, newPath);
+    fs.renameSync(tempPath, newPath);
+
+    // 🟡 2. Удаляем все остальные файлы
+    const files = fs.readdirSync(roomPath);
+    for (const file of files) {
+        if (file !== `${imgName}.jpg`) {
+            try {
+                fs.unlinkSync(path.join(roomPath, file));
+            } catch (e) {
+                // файл могли удалить параллельно — это ок
+            }
+        }
+    }
 
     res.json({ id: imgName, roomId });
 });
 
+
 // ------------------
-app.get('/screen/:roomId/:filename', (req, res) => {
-    const { roomId, filename } = req.params;
+/// GET /screen/:roomId
+app.get('/screen/:roomId', (req, res) => {
+    const { roomId } = req.params;
 
-    const filePath = path.join(
-        rooms.getRoomPath(roomId),
-        filename
-    );
-
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'Not found' });
+    if (!rooms.roomExists(roomId)) {
+        return res.status(404).json({ error: 'Room not found' });
     }
+
+    const roomPath = rooms.getRoomPath(roomId);
+    const files = fs.readdirSync(roomPath);
+
+    if (!files.length) {
+        return res.status(404).json({ error: 'No screenshot yet' });
+    }
+
+    // В комнате всегда один файл
+    const filename = files[0];
+    const filePath = path.join(roomPath, filename);
+
+    // Используем имя файла как версию
+    const currentETag = `"${filename}"`;
+    const clientETag = req.headers['if-none-match'];
+
+    // Если клиент уже имеет эту версию — ничего не шлём
+    if (clientETag === currentETag) {
+        return res.status(304).end();
+    }
+
+    // Иначе — отдаём новую картинку
+    res.setHeader('ETag', currentETag);
+    res.setHeader('Cache-Control', 'no-cache'); // важно для браузеров
 
     res.sendFile(path.resolve(filePath));
 });
@@ -103,7 +137,7 @@ https.createServer(httpsOptions, app).listen(
     SERVER_PORT,
     '0.0.0.0', 
     () => {
-        console.clear();
+        // console.clear();
         console.log(`Сервер запущен: ${PUBLIC_URL}`)
     }
 );
