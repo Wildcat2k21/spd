@@ -96,6 +96,16 @@ function selectAllIfNotEmpty() {
     }, 100);
 }
 
+function fetchWithTimeout(url, options = {}, timeout = 5000) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    return fetch(url, {
+        ...options,
+        signal: controller.signal
+    }).finally(() => clearTimeout(id));
+}
+
 $roomLink.addEventListener('click', selectAllIfNotEmpty);
 $roomLink.addEventListener('touchend', selectAllIfNotEmpty);
 
@@ -124,17 +134,30 @@ async function screenshotLoop() {
         form.append('file', blob, 'screenshot.jpg');
         form.append('roomId', roomId);
 
-        const res = await fetch(`${api}/screenshot`, {
-            method: 'POST',
-            body: form
-        });
+        const res = await fetchWithTimeout(
+            `${api}/screenshot`,
+            {
+                method: 'POST',
+                body: form
+            },
+            __CONFIG__.UPLOAD_TIMEOUT ?? 4000 // ⬅️ 4 сек, под мобильную сеть
+        );
+
+        // const res = await fetch(`${api}/screenshot`, {
+        //     method: 'POST',
+        //     body: form
+        // });
 
         const json = await res.json();
         logger.addLine(
             `Скрин сохранён: ${json.id}, ${(blob.size / 1024).toFixed(1)} KB`
         );
     } catch (err) {
-        logger.addLine(`Ошибка скрина: ${err.message}`);
+        if (err.name === 'AbortError') {
+            logger.addLine('Скрин: запрос прерван по таймауту');
+        } else {
+            logger.addLine(`Ошибка скрина: ${err.message}`);
+        }
     } finally {
         screenshotsIsRunning = false;
         setTimeout(screenshotLoop, __CONFIG__.INTERVAL ?? 1000);
